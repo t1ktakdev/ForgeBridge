@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.t1ktakdev/forgebridge",
+  "title": "ForgeBridge",
+  "description": "A local, permissioned MCP agent for authorized developer workstations.",
+  "repository": {
+    "url": "https://github.com/t1ktakdev/ForgeBridge",
+    "source": "github"
+  },
+  "version": "0.1.0-alpha.3",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "forgebridge",
+      "version": "0.1.0-alpha.3",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

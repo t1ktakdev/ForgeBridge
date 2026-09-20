@@ -1,0 +1,9 @@
+dist
+coverage
+node_modules
+.validation-tmp
+pnpm-lock.yaml
+SBOM.cdx.json
+release
+test-results
+playwright-report

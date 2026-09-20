@@ -1,0 +1,89 @@
+{
+  "name": "forgebridge",
+  "version": "0.1.0-alpha.3",
+  "description": "A local, permissioned MCP agent for authorized developer workstations.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "mcpName": "io.github.t1ktakdev/forgebridge",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/t1ktakdev/ForgeBridge.git"
+  },
+  "homepage": "https://github.com/t1ktakdev/ForgeBridge#readme",
+  "bugs": {
+    "url": "https://github.com/t1ktakdev/ForgeBridge/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "developer-tools",
+    "local-agent",
+    "automation",
+    "chatgpt"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "forgebridge": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "scripts/install-windows.ps1",
+    "scripts/uninstall-windows.ps1",
+    "scripts/configure-autostart-windows.ps1",
+    "scripts/run-autostart-windows.ps1",
+    "scripts/remove-autostart-windows.ps1",
+    "README.md",
+    "README.ru.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "SECURITY.md",
+    "SBOM.cdx.json",
+    "server.json"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "clean": "node scripts/clean.mjs",
+    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run --testTimeout=30000 --no-file-parallelism",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "vitest run tests/e2e --testTimeout=30000",
+    "test:e2e:native": "vitest run tests/e2e --testTimeout=120000 --no-file-parallelism",
+    "sbom:generate": "node scripts/generate-sbom.mjs --write",
+    "sbom:check": "node scripts/generate-sbom.mjs --check",
+    "prepack": "pnpm run build && pnpm run sbom:generate",
+    "package:artifact": "node scripts/package-release.mjs",
+    "package:validate": "node scripts/validate-package.mjs",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "1.7.5",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "diff": "9.0.0",
+    "node-pty": "1.1.0",
+    "playwright": "1.63.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.5.1",
+    "eslint": "10.10.0",
+    "prettier": "3.9.6",
+    "tsx": "4.20.6",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.0",
+    "vitest": "5.0.0"
+  },
+  "packageManager": "pnpm@11.22.0"
+}

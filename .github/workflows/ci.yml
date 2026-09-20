@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node and pnpm
+        uses: pnpm/setup@v2
+        with:
+          version: 11.22.0
+          runtime: node@22
+          cache: true
+          run-install: false
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium and Linux browser dependencies
+        if: runner.os == 'Linux'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install Chromium on Windows
+        if: runner.os == 'Windows'
+        run: pnpm exec playwright install chromium
+
+      - name: Run quality gate
+        run: pnpm run check
+
+      - name: Build distributable JavaScript
+        run: pnpm run build
+
+  dependency-audit:
+    name: Production dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node and pnpm
+        uses: pnpm/setup@v2
+        with:
+          version: 11.22.0
+          runtime: node@22
+          cache: true
+          run-install: false
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level high
+
+  release-artifact:
+    name: Package validation (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node and pnpm
+        uses: pnpm/setup@v2
+        with:
+          version: 11.22.0
+          runtime: node@22
+          cache: true
+          run-install: false
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium and Linux browser dependencies
+        if: runner.os == 'Linux'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install Chromium on Windows
+        if: runner.os == 'Windows'
+        run: pnpm exec playwright install chromium
+
+      - name: Build release artifact and SBOM
+        run: pnpm run package:artifact
+
+      - name: Install and validate packaged artifact
+        run: pnpm run package:validate
+
+      - name: Upload validated artifact without publishing
+        uses: actions/upload-artifact@v6
+        with:
+          name: forgebridge-${{ runner.os }}
+          path: release/
+          if-no-files-found: error
