@@ -9,12 +9,12 @@ import { DeviceIdentityStore, type DeviceIdentity } from './core/identity.js';
 import { Redactor } from './core/redactor.js';
 import { BrowserManager } from './browser/manager.js';
 import { FileService } from './filesystem/service.js';
-import { PathGuard } from './filesystem/path-guard.js';
+import { canonicalPath, PathGuard } from './filesystem/path-guard.js';
 import { GitService } from './git/service.js';
 import { JobManager } from './jobs/manager.js';
 import { ApprovalStore } from './policy/approvals.js';
 import { PermissionEngine } from './policy/engine.js';
-import type { PermissionMode } from './policy/types.js';
+import type { PermissionMode, PolicyRule } from './policy/types.js';
 import { shellContract } from './terminal/host.js';
 import { TerminalManager } from './terminal/manager.js';
 import { WindowsUiAutomation } from './windows/uia.js';
@@ -97,15 +97,35 @@ export class ForgeBridgeAgent {
     await audit.initialize();
     const approvals = new ApprovalStore(stateDirectory, config.limits.approvalTtlMs);
     await approvals.initialize();
+    const guard = await PathGuard.create(
+      config.roots.map((root) => root.path),
+      [stateDirectory, ...protectedPaths],
+    );
+    // Pin policy scopes to the same physical paths used by filesystem authorization.
+    const normalizeRule = async (rule: PolicyRule): Promise<PolicyRule> => {
+      const scope = rule.scope;
+      if (!scope || (scope.kind !== 'path' && scope.kind !== 'repository')) return rule;
+      return { ...rule, scope: { ...scope, value: await canonicalPath(scope.value) } };
+    };
+    config.roots = await Promise.all(
+      config.roots.map(async (root) => ({
+        ...root,
+        path: (await guard.resolve(root.path)).canonical,
+      })),
+    );
+    config.rules = await Promise.all(config.rules.map(normalizeRule));
+    config.projectProfiles = await Promise.all(
+      config.projectProfiles.map(async (profile) => ({
+        ...profile,
+        root: await canonicalPath(profile.root),
+        rules: await Promise.all(profile.rules.map(normalizeRule)),
+      })),
+    );
     const permissions = new PermissionEngine(config, approvals, redactor);
     const executionPolicy = new ExecutionPolicy(config.execution);
     const resources = new ResourceGovernor(executionPolicy);
     const foregroundActions = new ForegroundActionQueue(stateDirectory);
     await foregroundActions.initialize();
-    const guard = await PathGuard.create(
-      config.roots.map((root) => root.path),
-      [stateDirectory, ...protectedPaths],
-    );
     const files = new FileService(guard, config.limits);
     const terminal = new TerminalManager(
       config.limits.maxOutputBytes,
@@ -234,6 +254,7 @@ export class ForgeBridgeAgent {
   }
 
   async setProjectMode(root: string, mode: PermissionMode): Promise<void> {
+    const resolvedRoot = (await this.files.guard.resolve(root)).canonical;
     const current = this.config.projectProfiles.find((profile) => {
       const left =
         process.platform === 'win32'
@@ -241,14 +262,15 @@ export class ForgeBridgeAgent {
           : path.resolve(profile.root);
       const right =
         process.platform === 'win32'
-          ? path.resolve(root).toLocaleLowerCase('en-US')
-          : path.resolve(root);
+          ? path.resolve(resolvedRoot).toLocaleLowerCase('en-US')
+          : path.resolve(resolvedRoot);
       return left === right;
     });
-    await this.setProjectPolicy(root, mode, current?.autonomy ?? 'standard');
+    await this.setProjectPolicy(resolvedRoot, mode, current?.autonomy ?? 'standard');
   }
 
   async setProjectAutonomy(root: string, autonomy: ProjectAutonomy): Promise<void> {
+    const resolvedRoot = (await this.files.guard.resolve(root)).canonical;
     const current = this.config.projectProfiles.find((profile) => {
       const left =
         process.platform === 'win32'
@@ -256,11 +278,11 @@ export class ForgeBridgeAgent {
           : path.resolve(profile.root);
       const right =
         process.platform === 'win32'
-          ? path.resolve(root).toLocaleLowerCase('en-US')
-          : path.resolve(root);
+          ? path.resolve(resolvedRoot).toLocaleLowerCase('en-US')
+          : path.resolve(resolvedRoot);
       return left === right;
     });
-    await this.setProjectPolicy(root, current?.mode ?? this.config.mode, autonomy);
+    await this.setProjectPolicy(resolvedRoot, current?.mode ?? this.config.mode, autonomy);
   }
 
   async removeProjectProfile(root: string): Promise<boolean> {

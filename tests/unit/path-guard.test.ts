@@ -65,6 +65,8 @@ describe('PathGuard', () => {
 
     expect(guard.isProtected(await guard.resolve(state))).toBe(true);
     expect(guard.isSensitive(await guard.resolve(path.join(state, 'local-token.json')))).toBe(true);
-    expect(guard.isSensitivePath(path.join(root, 'ordinary.txt'))).toBe(false);
+    expect(
+      guard.isSensitivePath((await guard.resolve(path.join(root, 'ordinary.txt'))).canonical),
+    ).toBe(false);
   });
 });

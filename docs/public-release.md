@@ -83,3 +83,15 @@ This path runs the quality gate and installed-package validation, verifies the e
 version and MCP identity, then publishes Registry metadata using GitHub OIDC. It does not publish
 npm or move tags. The publisher binary is pinned and its SHA-256 checksum is verified before use. A
 normal manual dispatch with the input left false runs validation only.
+
+## Path aliases in cross-platform validation
+
+The CLI recognizes npm bin symlinks and aliased temporary directories. The package validator locates
+npm independently from the Node executable because pnpm-managed runtimes need not bundle npm beside
+Node.
+
+At agent startup, configured roots, project profiles, and filesystem/repository rule scopes are
+resolved to physical paths. This keeps permission checks consistent with the filesystem guard on
+macOS (`/var` versus `/private/var`) and Windows (short versus long paths). Retargeting an alias
+after startup does not grant access to its new destination. Regression tests cover profile asks,
+explicit denies, and alias retargeting.

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { realpath, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -146,7 +146,7 @@ describe('FileService', () => {
       maxResults: 10,
     });
     expect(result.matches).toMatchObject([
-      { path: { text: path.join(root, 'src', 'index.ts') }, line_number: 2 },
+      { path: { text: await realpath(path.join(root, 'src', 'index.ts')) }, line_number: 2 },
     ]);
     await expect(files.searchContent(root, '[')).rejects.toMatchObject({
       code: 'invalid_search_pattern',

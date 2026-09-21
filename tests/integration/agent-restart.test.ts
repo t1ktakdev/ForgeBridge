@@ -1,4 +1,4 @@
-import { mkdtemp } from 'node:fs/promises';
+import { realpath, mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -22,7 +22,7 @@ describe('agent restart', () => {
   });
 
   it('restores durable state and discards session-only grants', async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), 'forgebridge-restart-root-'));
+    const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'forgebridge-restart-root-')));
     const state = await mkdtemp(path.join(os.tmpdir(), 'forgebridge-restart-state-'));
     const configFile = path.join(state, 'config.json');
     const config = defaultConfig(root);

@@ -1,4 +1,4 @@
-import { mkdtemp } from 'node:fs/promises';
+import { realpath, mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -19,7 +19,7 @@ describe('loopback HTTP transport', () => {
   });
 
   it('requires a bearer token, rejects foreign origins, and serves MCP tools', async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), 'forgebridge-http-root-'));
+    const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'forgebridge-http-root-')));
     const state = await mkdtemp(path.join(os.tmpdir(), 'forgebridge-http-state-'));
     agent = await ForgeBridgeAgent.create(defaultConfig(root), state);
     const tokens = new LocalTokenStore(state);
@@ -208,7 +208,7 @@ describe('loopback HTTP transport', () => {
   });
 
   it('returns a structured retryable error when the configured port is occupied', async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), 'forgebridge-http-root-'));
+    const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'forgebridge-http-root-')));
     const state = await mkdtemp(path.join(os.tmpdir(), 'forgebridge-http-state-'));
     agent = await ForgeBridgeAgent.create(defaultConfig(root), state);
     const tokens = new LocalTokenStore(state);

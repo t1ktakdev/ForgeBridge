@@ -44,6 +44,24 @@ async function exists(value: string): Promise<boolean> {
   }
 }
 
+// Resolve existing ancestors as well as targets, so future paths retain the same physical scope.
+export async function canonicalPath(value: string): Promise<string> {
+  rejectMalformedPath(value);
+  const missing: string[] = [];
+  let ancestor = path.resolve(value);
+  while (!(await exists(ancestor))) {
+    const parent = path.dirname(ancestor);
+    if (parent === ancestor) {
+      throw new ForgeBridgeError('path_not_found', 'No existing ancestor for path', {
+        requested: value,
+      });
+    }
+    missing.unshift(path.basename(ancestor));
+    ancestor = parent;
+  }
+  return path.join(await realpath(ancestor), ...missing);
+}
+
 export class PathGuard {
   readonly roots: readonly string[];
   readonly protectedPaths: readonly string[];
@@ -70,20 +88,7 @@ export class PathGuard {
     const canonicalProtectedPaths: string[] = [];
     for (const protectedPath of protectedPaths) {
       rejectMalformedPath(protectedPath);
-      const absolute = path.resolve(protectedPath);
-      if (await exists(absolute)) {
-        canonicalProtectedPaths.push(await realpath(absolute));
-        continue;
-      }
-      const missing: string[] = [];
-      let ancestor = absolute;
-      while (!(await exists(ancestor))) {
-        const parent = path.dirname(ancestor);
-        if (parent === ancestor) break;
-        missing.unshift(path.basename(ancestor));
-        ancestor = parent;
-      }
-      canonicalProtectedPaths.push(path.join(await realpath(ancestor), ...missing));
+      canonicalProtectedPaths.push(await canonicalPath(protectedPath));
     }
     return new PathGuard(
       [...new Set(canonicalRoots.map(path.normalize))],
@@ -112,19 +117,7 @@ export class PathGuard {
         canonical = await realpath(absolute);
       }
     } else {
-      const missing: string[] = [];
-      let ancestor = absolute;
-      while (!(await exists(ancestor))) {
-        const parent = path.dirname(ancestor);
-        if (parent === ancestor) {
-          throw new ForgeBridgeError('path_not_found', 'No existing ancestor for path', {
-            requested,
-          });
-        }
-        missing.unshift(path.basename(ancestor));
-        ancestor = parent;
-      }
-      canonical = path.join(await realpath(ancestor), ...missing);
+      canonical = await canonicalPath(absolute);
     }
 
     const root = this.roots
