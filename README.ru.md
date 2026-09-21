@@ -1,5 +1,12 @@
 # ForgeBridge
 
+[![CI](https://github.com/t1ktakdev/ForgeBridge/actions/workflows/ci.yml/badge.svg)](https://github.com/t1ktakdev/ForgeBridge/actions/workflows/ci.yml)
+[![npm next](https://img.shields.io/npm/v/forgebridge/next?label=npm%20next)](https://www.npmjs.com/package/forgebridge)
+[![GitHub release](https://img.shields.io/github/v/release/t1ktakdev/ForgeBridge?include_prereleases&label=release)](https://github.com/t1ktakdev/ForgeBridge/releases)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![До 1.0](https://img.shields.io/badge/%D0%B4%D0%BE%201.0-%E2%89%8868%25-f2c16e)](ROADMAP.ru.md)
+![Активная разработка](https://img.shields.io/badge/%D1%81%D1%82%D0%B0%D1%82%D1%83%D1%81-%D0%B0%D0%BA%D1%82%D0%B8%D0%B2%D0%BD%D0%B0%D1%8F%20%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%BA%D0%B0-2ea44f)
+
 > **Статус: публичная alpha / beta-тестирование.**
 >
 > ForgeBridge уже пригоден для реального тестирования, но это пока не стабильный production-релиз.
@@ -35,6 +42,29 @@ ForgeBridge — локальный MCP-агент для разработки н
 
 Интерфейс поддерживает русский и английский языки, тёмную и светлую темы, адаптивную вёрстку,
 реальные jobs/sessions/approvals, политики проектов и audit-ленту из локального Control API.
+
+## Статус проекта
+
+**Текущий публичный релиз:** `v0.1.0-alpha.4` · **Канал:** `next` · **Оценка готовности к 1.0:**
+**≈68%**
+
+> Процент — это взвешенная оценка крупных milestone-блоков, а не оценка качества и не обещанная дата
+> релиза. Он меняется по мере того, как экспериментальные части становятся release-ready.
+
+| Направление                                                                           | Состояние                 |
+| ------------------------------------------------------------------------------------- | ------------------------- |
+| Локальный агент, permissions, audit, filesystem, Git, terminal, durable jobs, browser | ✅ Готово                 |
+| Control Center, RU/EN, темы, lifecycle actions, guided setup                          | ✅ Готово                 |
+| Кроссплатформенный CI, npm, MCP Registry, SBOM/checksum                               | ✅ Готово                 |
+| Update / repair / recovery                                                            | 🟡 В работе               |
+| Стабилизация public API, migrations и deprecation policy                              | 🟡 В работе               |
+| Multi-device / remote routing                                                         | 🟠 Следующий крупный блок |
+| Compatibility matrix + независимый security pass                                      | 🟠 Нужны до 1.0           |
+
+**Следующая цель:** `0.2.0-beta.1` — multi-device foundation, lifecycle/update UX и первый
+compatibility freeze.
+
+Полный план: [Road to 1.0](ROADMAP.ru.md).
 
 ## Что умеет ForgeBridge
 

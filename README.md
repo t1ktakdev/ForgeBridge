@@ -1,5 +1,12 @@
 # ForgeBridge
 
+[![CI](https://github.com/t1ktakdev/ForgeBridge/actions/workflows/ci.yml/badge.svg)](https://github.com/t1ktakdev/ForgeBridge/actions/workflows/ci.yml)
+[![npm next](https://img.shields.io/npm/v/forgebridge/next?label=npm%20next)](https://www.npmjs.com/package/forgebridge)
+[![GitHub release](https://img.shields.io/github/v/release/t1ktakdev/ForgeBridge?include_prereleases&label=release)](https://github.com/t1ktakdev/ForgeBridge/releases)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![Road to 1.0](https://img.shields.io/badge/road%20to%201.0-%E2%89%8868%25-f2c16e)](ROADMAP.md)
+![Active development](https://img.shields.io/badge/status-active%20development-2ea44f)
+
 [Русская документация](README.ru.md)
 
 > **Status: public alpha / beta testing.** ForgeBridge is available for early real-world testing,
@@ -41,6 +48,29 @@ state files.
 The interface supports English and Russian, dark and light themes, responsive layouts, live jobs,
 sessions, approvals, project policies, and a redacted audit feed backed by the real local Control
 API.
+
+## Project status
+
+**Current public release:** `v0.1.0-alpha.4` · **Channel:** `next` · **Estimated v1.0 readiness:**
+**≈68%**
+
+> The percentage is a weighted milestone estimate, not a quality score or release date. It is
+> updated as major product blocks move from experimental to release-ready.
+
+| Area                                                                              | Status                      |
+| --------------------------------------------------------------------------------- | --------------------------- |
+| Local agent, permissions, audit, filesystem, Git, terminal, durable jobs, browser | ✅ Shipped                  |
+| Control Center, RU/EN, themes, lifecycle actions, guided setup                    | ✅ Shipped                  |
+| Cross-platform CI, npm package, MCP Registry, SBOM/checksums                      | ✅ Shipped                  |
+| Update / repair / recovery                                                        | 🟡 In progress              |
+| Public API stability, migrations, deprecation policy                              | 🟡 In progress              |
+| Multi-device / remote routing                                                     | 🟠 Next major product block |
+| Compatibility matrix + independent security pass                                  | 🟠 Required before 1.0      |
+
+**Next milestone:** `0.2.0-beta.1` — multi-device foundation, lifecycle/update UX, and the first
+compatibility freeze.
+
+See the full [Road to 1.0](ROADMAP.md).
 
 ## Quick start
 
