@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -31,6 +31,13 @@ const SbomSchema = z.object({
 });
 
 describe('release package metadata', () => {
+  it('rejects accidentally nested snapshot copies', async () => {
+    for (const directory of ['src', 'tests', 'scripts', 'docs', '.github']) {
+      const children = await readdir(path.resolve(directory));
+      expect(children, `Duplicate ${directory}/${directory} snapshot`).not.toContain(directory);
+    }
+  });
+
   it('keeps the package, CLI, and MCP version source consistent', async () => {
     const manifest = PackageManifestSchema.parse(
       JSON.parse(await readFile(path.resolve('package.json'), 'utf8')),
@@ -40,9 +47,9 @@ describe('release package metadata', () => {
     expect(manifest.private).toBeUndefined();
     expect(manifest.license).toBe('Apache-2.0');
     expect(manifest.mcpName).toBe('io.github.t1ktakdev/forgebridge');
-    expect(manifest.repository.url).toBe('https://github.com/t1ktakdev/ForgeBridge.git');
+    expect(manifest.repository.url).toBe('git+https://github.com/t1ktakdev/ForgeBridge.git');
     expect(manifest.publishConfig.access).toBe('public');
-    expect(manifest.bin).toEqual({ forgebridge: './dist/cli.js' });
+    expect(manifest.bin).toEqual({ forgebridge: 'dist/cli.js' });
     expect(manifest.engines.node).toBe('>=22.0.0');
     expect(manifest.files).toContain('SBOM.cdx.json');
     expect(manifest.files).toContain('README.ru.md');

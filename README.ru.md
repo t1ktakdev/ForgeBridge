@@ -110,8 +110,8 @@ pnpm run package:validate
 
 Основные документы:
 
-- [Установка и packaging](docs/installation.md)\n-
-  [Подключение к ChatGPT через Secure MCP Tunnel — пошагово](docs/secure-tunnel.ru.md)
+- [Установка и packaging](docs/installation.md)
+- [Подключение к ChatGPT через Secure MCP Tunnel — пошагово](docs/secure-tunnel.ru.md)
 - [Архитектура](docs/architecture.md)
 - [Permission model](docs/permission-model.md)
 - [Security model](docs/security-model.md)

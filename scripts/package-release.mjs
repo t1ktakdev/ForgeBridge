@@ -4,6 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { pnpmInvocation } from './pnpm-invocation.mjs';
 
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outputDirectory = path.join(repository, 'release');
@@ -16,21 +17,18 @@ await mkdir(outputDirectory, { recursive: true });
 const manifest = JSON.parse(await readFile(path.join(repository, 'package.json'), 'utf8'));
 const artifactStem = manifest.name.replace(/^@/, '').replaceAll('/', '-');
 
-const pnpmCommand = process.env.npm_execpath?.toLowerCase().includes('pnpm')
-  ? process.execPath
-  : 'pnpm';
-const pnpmArguments = [
-  ...(pnpmCommand === process.execPath ? [process.env.npm_execpath] : []),
+const [pnpmCommand, pnpmArguments] = pnpmInvocation([
   'pack',
   '--out',
   path.join(outputDirectory, `${artifactStem}-%v.tgz`),
-];
+]);
 const packed = spawnSync(pnpmCommand, pnpmArguments, {
   cwd: repository,
   encoding: 'utf8',
   shell: false,
   stdio: 'inherit',
 });
+if (packed.error) throw new Error('Could not start pnpm pack', { cause: packed.error });
 if (packed.status !== 0) throw new Error(`pnpm pack failed with exit code ${packed.status}`);
 
 const tarballs = (await readdir(outputDirectory)).filter((name) => name.endsWith('.tgz'));

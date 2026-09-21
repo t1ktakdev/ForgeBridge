@@ -7,7 +7,7 @@
   "mcpName": "io.github.t1ktakdev/forgebridge",
   "repository": {
     "type": "git",
-    "url": "https://github.com/t1ktakdev/ForgeBridge.git"
+    "url": "git+https://github.com/t1ktakdev/ForgeBridge.git"
   },
   "homepage": "https://github.com/t1ktakdev/ForgeBridge#readme",
   "bugs": {
@@ -25,7 +25,7 @@
     "access": "public"
   },
   "bin": {
-    "forgebridge": "./dist/cli.js"
+    "forgebridge": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -63,9 +63,10 @@
     "prepack": "pnpm run build && pnpm run sbom:generate",
     "package:artifact": "node scripts/package-release.mjs",
     "package:validate": "node scripts/validate-package.mjs",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:release && pnpm test",
     "dev": "tsx src/cli.ts",
-    "start": "node dist/cli.js"
+    "start": "node dist/cli.js",
+    "test:release": "node --test scripts/pnpm-invocation.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "1.7.5",

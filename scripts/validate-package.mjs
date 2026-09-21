@@ -136,7 +136,7 @@ try {
   const packagedManifest = JSON.parse(
     await readFile(path.join(extracted, 'package', 'package.json'), 'utf8'),
   );
-  if (packagedManifest.bin?.forgebridge !== './dist/cli.js') {
+  if (packagedManifest.bin?.forgebridge !== 'dist/cli.js') {
     throw new Error('Packaged forgebridge bin does not point to dist/cli.js');
   }
   if (typeof packagedManifest.name !== 'string' || !packagedManifest.name) {
@@ -177,6 +177,17 @@ try {
   const cli = path.join(packageRoot, 'dist', 'cli.js');
   const version = run(process.execPath, [cli, '--version'], { cwd: temporary });
   if (version !== packagedManifest.version) throw new Error(`Unexpected CLI version: ${version}`);
+  const [binCommand, binArguments] = npmInvocation([
+    'exec',
+    '--offline',
+    '--prefix',
+    installed,
+    '--',
+    'forgebridge',
+    '--version',
+  ]);
+  const binVersion = run(binCommand, binArguments, { cwd: installed });
+  if (binVersion !== version) throw new Error('Installed npm bin shim returned the wrong version');
   run(process.execPath, [cli, 'init', '--root', project, '--state', state], { cwd: temporary });
   const configFile = path.join(state, 'config.json');
   const config = JSON.parse(await readFile(configFile, 'utf8'));

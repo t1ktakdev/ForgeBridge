@@ -52,3 +52,20 @@ review. Artifact signing and an external audit-chain checkpoint remain future ha
 The alpha label is intentional: ForgeBridge has a strong local validation suite, but an approved
 arbitrary shell still has the authority of the OS account running the agent and is not an OS
 sandbox.
+
+## Cross-platform packaging checks
+
+The release packer resolves pnpm JavaScript launchers, native executables, and Windows npm/Corepack
+shims without passing bare `pnpm` to Node or relying on shell quoting. Run `pnpm test:release` for
+launcher regression tests. The CI quality and installed-package matrix covers Windows, Linux, and
+macOS; a configured matrix is not evidence that those jobs have passed.
+
+When updating a public snapshot, copy individual files to their exact destinations. Recursively
+copying a directory into an existing directory can create `tests/tests`, `src/src`, `docs/docs`,
+`scripts/scripts`, or `.github/.github`. The metadata test rejects these accidental duplicates.
+Do not suppress lint errors from broken relative imports in duplicated tests.
+
+Package validation checks both the CLI JavaScript entry point and the installed npm executable via
+offline `npm exec`. It uses temporary installation, state, project roots, and a separate HTTP port.
+The running development agent and its tunnel are not replaced. Native interactive desktop tests
+remain separate opt-in gates.
