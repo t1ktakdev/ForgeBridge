@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { ForgeBridgeError } from '../core/errors.js';
@@ -99,6 +99,56 @@ function trustedSshCommand(): string {
     candidates.find((candidate) => existsSync(candidate)) ??
     (process.platform === 'win32' ? 'C:\\Windows\\System32\\OpenSSH\\ssh.exe' : '/usr/bin/ssh');
   return `"${executable.replaceAll('\\', '/')}"`;
+}
+
+const NETWORK_GIT_OPERATIONS = new Set(['fetch', 'pull', 'push']);
+const SAFE_CREDENTIAL_HELPER = /^[A-Za-z0-9][A-Za-z0-9._-]*(?: [A-Za-z0-9._=:/-]+)*$/u;
+
+export function sanitizeCredentialHelpers(values: readonly string[]): string[] {
+  const helpers = new Set<string>();
+  for (const raw of values) {
+    const value = raw.trim();
+    if (!value) {
+      helpers.clear();
+      continue;
+    }
+    if (value.startsWith('!') || value.startsWith('-') || !SAFE_CREDENTIAL_HELPER.test(value)) {
+      continue;
+    }
+    helpers.add(value);
+  }
+  return [...helpers];
+}
+
+function trustedCredentialHelpers(executable: string): string[] {
+  const configuredValues: string[] = [];
+  for (const scope of ['--system', '--global']) {
+    const result = spawnSync(executable, ['config', scope, '--get-all', 'credential.helper'], {
+      encoding: 'utf8',
+      windowsHide: true,
+      shell: false,
+      timeout: 5_000,
+      env: gitEnvironment(),
+    });
+    if (result.error || (result.status !== 0 && result.status !== 1)) continue;
+    if (result.status === 0) {
+      const output = result.stdout;
+      configuredValues.push(...output.replace(/\r?\n$/u, '').split(/\r?\n/u));
+    }
+  }
+  const helpers = new Set(sanitizeCredentialHelpers(configuredValues));
+  const configured = process.env['FORGEBRIDGE_GIT_CREDENTIAL_HELPER']?.trim();
+  if (configured && sanitizeCredentialHelpers([configured]).length === 1) helpers.add(configured);
+  return [...helpers];
+}
+
+function credentialHelperArguments(executable: string, operation: string | undefined): string[] {
+  const args = ['-c', 'credential.helper='];
+  if (!operation || !NETWORK_GIT_OPERATIONS.has(operation)) return args;
+  for (const helper of trustedCredentialHelpers(executable)) {
+    args.push('-c', `credential.helper=${helper}`);
+  }
+  return args;
 }
 
 export class GitService {
@@ -353,9 +403,11 @@ export class GitService {
       args[0] === 'config' || args[0] === 'rev-parse'
         ? []
         : await this.disabledFilterArguments(workingDirectory);
+    const executable = (this.#executable ??= trustedGitExecutable());
+    const credentials = credentialHelperArguments(executable, args[0]);
     return new Promise((resolve, reject) => {
       const child = spawn(
-        (this.#executable ??= trustedGitExecutable()),
+        executable,
         [
           '--no-pager',
           '-c',
@@ -366,8 +418,7 @@ export class GitService {
           'core.untrackedCache=false',
           '-c',
           'commit.gpgSign=false',
-          '-c',
-          'credential.helper=',
+          ...credentials,
           '-c',
           `core.sshCommand=${trustedSshCommand()}`,
           '-c',
