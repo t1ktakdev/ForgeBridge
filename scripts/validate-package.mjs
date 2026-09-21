@@ -108,6 +108,7 @@ try {
     'package/scripts/configure-autostart-windows.ps1',
     'package/scripts/run-autostart-windows.ps1',
     'package/scripts/remove-autostart-windows.ps1',
+    'package/scripts/repair-node-pty-macos.mjs',
   ];
   for (const name of required) {
     if (!entries.includes(name)) throw new Error(`Package is missing ${name}`);
