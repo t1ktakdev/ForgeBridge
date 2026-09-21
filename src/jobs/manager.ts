@@ -42,6 +42,7 @@ const JobRecordSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).default({}),
   logFile: z.string(),
   logTruncated: z.boolean().default(false),
+  error: z.string().optional(),
 });
 
 export type JobRecord = z.infer<typeof JobRecordSchema>;
@@ -167,7 +168,13 @@ export class JobManager {
         true,
       );
     }
-    const releaseSlot = this.#resources?.acquireCpuSlot() ?? (() => undefined);
+    const release = this.#resources?.acquireCpuSlot() ?? (() => undefined);
+    let slotReleased = false;
+    const releaseSlot = (): void => {
+      if (slotReleased) return;
+      slotReleased = true;
+      release();
+    };
     const id = randomUUID();
     const shell = options.shell ?? (process.platform === 'win32' ? 'powershell' : 'bash');
     const logFile = path.join(this.#logsDirectory, `${id}.log`);
@@ -229,26 +236,39 @@ export class JobManager {
     };
     child.stdout?.on('data', (chunk: Buffer) => log('stdout', chunk));
     child.stderr?.on('data', (chunk: Buffer) => log('stderr', chunk));
+    let processFailed = false;
     child.once('error', (error) => {
-      releaseSlot();
+      processFailed = true;
       log('stderr', Buffer.from(`ForgeBridge could not start process: ${error.message}\n`));
-      record.status = 'failed';
-      record.finishedAt = new Date().toISOString();
-      this.#runtimes.delete(id);
-      void runtime.pendingWrites.then(async () => this.persist()).catch(() => undefined);
     });
-    child.once('exit', (exitCode, signal) => {
-      releaseSlot();
-      record.exitCode = exitCode;
-      record.signal = signal;
-      if (record.status !== 'cancelled') record.status = exitCode === 0 ? 'succeeded' : 'failed';
-      record.finishedAt = new Date().toISOString();
-      this.#runtimes.delete(id);
-      void runtime.pendingWrites.then(async () => this.persist()).catch(() => undefined);
+    // 'exit' can precede the last stdout/stderr chunks. Completion includes durable log writes.
+    child.once('close', (exitCode, signal) => {
+      void (async () => {
+        try {
+          await runtime.pendingWrites;
+        } catch (error) {
+          processFailed = true;
+          record.logTruncated = true;
+          record.error = this.#redactor.redactText(
+            'Could not persist job output: ' +
+              (error instanceof Error ? error.message : String(error)),
+          ).value;
+        }
+        record.exitCode = exitCode;
+        record.signal = signal;
+        if (record.status !== 'cancelled') {
+          record.status = !processFailed && exitCode === 0 ? 'succeeded' : 'failed';
+        }
+        record.finishedAt = new Date().toISOString();
+        this.#runtimes.delete(id);
+        releaseSlot();
+        await this.persist();
+      })().catch(() => undefined);
     });
     try {
       await this.persist();
     } catch (error) {
+      processFailed = true;
       record.status = 'failed';
       record.finishedAt = new Date().toISOString();
       this.#runtimes.delete(id);

@@ -1,5 +1,14 @@
 import { execFile } from 'node:child_process';
-import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import {
+  access,
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -60,7 +69,7 @@ describe('ChatGPT project workflow contracts', () => {
     for (const fn of cleanup.splice(0).reverse()) await fn();
   });
   async function fixture() {
-    const base = await mkdtemp(path.join(os.tmpdir(), 'forgebridge-model-'));
+    const base = await realpath(await mkdtemp(path.join(os.tmpdir(), 'forgebridge-model-')));
     cleanup.push(() => rm(base, { recursive: true, force: true }));
     const root = path.join(base, 'project with spaces Юникод');
     const state = path.join(base, 'state');
