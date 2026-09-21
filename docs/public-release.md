@@ -62,8 +62,8 @@ macOS; a configured matrix is not evidence that those jobs have passed.
 
 When updating a public snapshot, copy individual files to their exact destinations. Recursively
 copying a directory into an existing directory can create `tests/tests`, `src/src`, `docs/docs`,
-`scripts/scripts`, or `.github/.github`. The metadata test rejects these accidental duplicates.
-Do not suppress lint errors from broken relative imports in duplicated tests.
+`scripts/scripts`, or `.github/.github`. The metadata test rejects these accidental duplicates. Do
+not suppress lint errors from broken relative imports in duplicated tests.
 
 Package validation checks both the CLI JavaScript entry point and the installed npm executable via
 offline `npm exec`. It uses temporary installation, state, project roots, and a separate HTTP port.

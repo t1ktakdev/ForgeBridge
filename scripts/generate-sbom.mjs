@@ -3,16 +3,10 @@ import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { pnpmInvocation } from './pnpm-invocation.mjs';
 
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outputFile = path.join(repository, 'SBOM.cdx.json');
-
-function pnpmInvocation(args) {
-  if (process.env.npm_execpath?.toLowerCase().includes('pnpm')) {
-    return [process.execPath, [process.env.npm_execpath, ...args]];
-  }
-  return ['pnpm', args];
-}
 
 function packageUrl(name, version) {
   const encodedName = name.startsWith('@')
@@ -51,7 +45,9 @@ const listed = spawnSync(pnpmCommand, pnpmArguments, {
   encoding: 'utf8',
   shell: false,
 });
-if (listed.status !== 0) throw new Error(listed.stderr || 'pnpm list failed');
+if (listed.error || listed.status !== 0) {
+  throw new Error(listed.error?.message || listed.stderr || 'pnpm list failed');
+}
 const [root] = JSON.parse(listed.stdout);
 if (!root?.name || !root?.version) throw new Error('pnpm list did not return the package root');
 
