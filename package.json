@@ -7,7 +7,7 @@
   "mcpName": "io.github.t1ktakdev/forgebridge",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/t1ktakdev/ForgeBridge.git"
+    "url": "https://github.com/t1ktakdev/ForgeBridge"
   },
   "homepage": "https://github.com/t1ktakdev/ForgeBridge#readme",
   "bugs": {

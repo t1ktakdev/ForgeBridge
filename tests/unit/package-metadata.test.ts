@@ -47,7 +47,7 @@ describe('release package metadata', () => {
     expect(manifest.private).toBeUndefined();
     expect(manifest.license).toBe('Apache-2.0');
     expect(manifest.mcpName).toBe('io.github.t1ktakdev/forgebridge');
-    expect(manifest.repository.url).toBe('git+https://github.com/t1ktakdev/ForgeBridge.git');
+    expect(manifest.repository.url).toBe('https://github.com/t1ktakdev/ForgeBridge');
     expect(manifest.publishConfig.access).toBe('public');
     expect(manifest.bin).toEqual({ forgebridge: 'dist/cli.js' });
     expect(manifest.engines.node).toBe('>=22.0.0');
