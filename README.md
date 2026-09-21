@@ -20,6 +20,28 @@ Current status and verified limitations are tracked in
 [the implementation plan](docs/implementation-plan.md). Issues and feedback are welcome; future
 releases will continue improving stability, onboarding, remote/multi-device UX, and tool coverage.
 
+## Control Center
+
+ForgeBridge includes a local Control Center for understanding what the agent is doing, reviewing
+permissions, following jobs and sessions, and inspecting the audit trail without digging through raw
+state files.
+
+<p align="center">
+  <img src="docs/assets/control-center/overview.png" alt="ForgeBridge Control Center overview" width="920">
+</p>
+
+| Projects                                                                            | Approvals                                                                             |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| <img src="docs/assets/control-center/projects.png" alt="ForgeBridge projects view"> | <img src="docs/assets/control-center/approvals.png" alt="ForgeBridge approvals view"> |
+
+<p align="center">
+  <img src="docs/assets/control-center/settings-ru-light.png" alt="ForgeBridge settings in Russian light theme" width="920">
+</p>
+
+The interface supports English and Russian, dark and light themes, responsive layouts, live jobs,
+sessions, approvals, project policies, and a redacted audit feed backed by the real local Control
+API.
+
 ## Quick start
 
 The public alpha package name is `forgebridge`; the installed command stays `forgebridge`. Once the

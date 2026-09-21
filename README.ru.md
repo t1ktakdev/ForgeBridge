@@ -16,6 +16,26 @@ ForgeBridge — локальный MCP-агент для разработки н
 семантические инструменты для разработки и применять локальные правила доступа, подтверждения и
 аудит действий.
 
+## Control Center
+
+В ForgeBridge есть локальный Control Center, где видно, что делает агент: активные проекты и задачи,
+сессии, подтверждения, политики доступа и редактированный audit log.
+
+<p align="center">
+  <img src="docs/assets/control-center/overview.png" alt="Главный экран ForgeBridge Control Center" width="920">
+</p>
+
+| Проекты                                                                                 | Подтверждения                                                                                 |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| <img src="docs/assets/control-center/projects.png" alt="Страница проектов ForgeBridge"> | <img src="docs/assets/control-center/approvals.png" alt="Страница подтверждений ForgeBridge"> |
+
+<p align="center">
+  <img src="docs/assets/control-center/settings-ru-light.png" alt="Настройки ForgeBridge на русском в светлой теме" width="920">
+</p>
+
+Интерфейс поддерживает русский и английский языки, тёмную и светлую темы, адаптивную вёрстку,
+реальные jobs/sessions/approvals, политики проектов и audit-ленту из локального Control API.
+
 ## Что умеет ForgeBridge
 
 - определять стек проекта, runtime, package manager, тесты, lint/typecheck/build и Git-состояние;
