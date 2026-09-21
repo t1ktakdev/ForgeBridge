@@ -35,6 +35,18 @@ describe('loopback HTTP transport', () => {
     });
     const address = await http.listen();
 
+    const uiResponse = await fetch(address.uiUrl);
+    expect(uiResponse.status).toBe(200);
+    expect(uiResponse.headers.get('content-type')).toContain('text/html');
+    expect(uiResponse.headers.get('x-frame-options')).toBe('DENY');
+    expect(uiResponse.headers.get('content-security-policy')).toContain("default-src 'none'");
+    expect(uiResponse.headers.get('content-security-policy')).toContain("connect-src 'self'");
+    expect(uiResponse.headers.get('content-security-policy')).toContain("frame-ancestors 'none'");
+    const uiHtml = await uiResponse.text();
+    expect(uiHtml).toContain('ForgeBridge Control Center');
+    expect(uiHtml).toContain('id="navigation"');
+    expect(uiHtml).not.toContain(token.token);
+
     expect((await fetch(address.mcpUrl.replace('/mcp', '/health'))).status).toBe(200);
     expect((await fetch(address.mcpUrl, { method: 'POST', body: '{}' })).status).toBe(401);
     expect(
@@ -73,6 +85,16 @@ describe('loopback HTTP transport', () => {
     });
     const csrf = (await csrfResponse.json()) as { csrfToken: string };
     controlHeaders['X-ForgeBridge-CSRF'] = csrf.csrfToken;
+    const controlStatusResponse = await fetch(address.mcpUrl.replace('/mcp', '/control/status'), {
+      headers: { Authorization: `Bearer ${token.token}` },
+    });
+    expect(controlStatusResponse.status).toBe(200);
+    await expect(controlStatusResponse.json()).resolves.toMatchObject({
+      status: {
+        browserSessions: [],
+        terminalSessions: [],
+      },
+    });
     const malformedJson = await fetch(address.mcpUrl.replace('/mcp', '/control/action'), {
       method: 'POST',
       headers: controlHeaders,

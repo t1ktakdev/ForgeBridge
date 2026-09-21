@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import path from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
@@ -12,7 +12,7 @@ import { z } from 'zod';
 import type { ForgeBridgeAgent } from '../agent.js';
 import { renderAppsStatusUi, STATUS_UI_URI } from '../control/apps-ui.js';
 import type { AuthorizationRequirement, DispatchRequest } from '../core/dispatcher.js';
-import { asForgeBridgeError } from '../core/errors.js';
+import { asForgeBridgeError, ForgeBridgeError } from '../core/errors.js';
 import type { PermissionScope } from '../policy/types.js';
 import { classifyCommand } from '../terminal/process-utils.js';
 import { ProjectService } from '../project/service.js';
@@ -26,6 +26,7 @@ import { FORGEBRIDGE_VERSION } from '../version.js';
 import {
   ProjectInspectInputSchema,
   ProjectCheckInputSchema,
+  ApprovalRespondInputSchema,
   AuditReadInputSchema,
   BrowserActInputSchema,
   BrowserReadInputSchema,
@@ -47,6 +48,7 @@ import {
 } from './schemas.js';
 
 type HandlerExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
+const APP_RESULT_META_KEY = 'io.github.t1ktakdev/forgebridge';
 
 const ToolResultSchema = z.object({
   ok: z.boolean(),
@@ -72,11 +74,12 @@ function safeInput(input: Record<string, unknown>): Record<string, unknown> {
   return result;
 }
 
-function toolResult(value: unknown) {
+function toolResult(value: unknown, meta?: Record<string, unknown>) {
   const output = { ok: true, data: value ?? null };
   return {
     content: [{ type: 'text' as const, text: JSON.stringify(output) }],
     structuredContent: output,
+    ...(meta ? { _meta: meta } : {}),
   };
 }
 
@@ -193,6 +196,7 @@ export function createForgeBridgeMcpServer(
     actorId: providedOptions.actorId ?? 'local-mcp-client',
     sessionId: providedOptions.sessionId ?? randomUUID(),
   };
+  const appApprovalToken = randomBytes(32).toString('base64url');
   const server = new McpServer(
     { name: 'forgebridge', version: FORGEBRIDGE_VERSION },
     {
@@ -1035,6 +1039,78 @@ export function createForgeBridgeMcpServer(
 
   registerAppTool(
     server,
+    'approval_respond',
+    {
+      title: 'Respond to a ForgeBridge approval',
+      description:
+        'App-only action used by the ForgeBridge MCP App approval buttons. The local permission engine remains authoritative and the approval must belong to this exact MCP actor/session.',
+      inputSchema: ApprovalRespondInputSchema,
+      outputSchema: ToolResultSchema,
+      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+      _meta: { ui: { visibility: ['app'] } },
+    },
+    async (input, extra) => {
+      const sessionId = extra.sessionId ?? options.sessionId;
+      const suppliedToken = Buffer.from(input.appToken, 'utf8');
+      const expectedToken = Buffer.from(appApprovalToken, 'utf8');
+      if (
+        suppliedToken.length !== expectedToken.length ||
+        !timingSafeEqual(suppliedToken, expectedToken)
+      ) {
+        return toolError(
+          agent,
+          new ForgeBridgeError('invalid_app_approval_token', 'Invalid MCP App approval token'),
+        );
+      }
+      const correlationId = randomUUID();
+      const started = Date.now();
+      const auditBase = {
+        correlationId,
+        actorId: options.actorId,
+        sessionId,
+        tool: 'approval_respond',
+        operation: input.response,
+        capability: 'approvals.respond' as const,
+        scope: { kind: 'device' as const, value: agent.identity.deviceId },
+        arguments: { approvalId: input.approvalId, response: input.response },
+        decision: 'allow' as const,
+        ruleId: 'mcp-app-user-action',
+      };
+      await agent.audit.append({ ...auditBase, result: 'allowed' });
+      try {
+        const record = await agent.approvals.respondForSession(
+          input.approvalId,
+          input.response,
+          options.actorId,
+          sessionId,
+          input.durationMs,
+          input.maxUses,
+        );
+        await agent.audit.append({
+          ...auditBase,
+          result: 'succeeded',
+          durationMs: Date.now() - started,
+        });
+        return toolResult({
+          approvalId: record.id,
+          status: record.status,
+          response: record.approvalKind ?? 'deny',
+        });
+      } catch (error) {
+        const normalized = asForgeBridgeError(error);
+        await agent.audit.append({
+          ...auditBase,
+          result: 'failed',
+          durationMs: Date.now() - started,
+          errorCode: normalized.code,
+        });
+        return toolError(agent, error);
+      }
+    },
+  );
+
+  registerAppTool(
+    server,
     'render_status',
     {
       title: 'Show ForgeBridge status panel',
@@ -1069,6 +1145,9 @@ export function createForgeBridgeMcpServer(
               recentAudit: (await agent.audit.readAll()).slice(-25),
             }),
           ),
+          {
+            [APP_RESULT_META_KEY]: { approvalToken: appApprovalToken },
+          },
         );
       } catch (error) {
         return toolError(agent, error);

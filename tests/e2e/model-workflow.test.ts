@@ -395,6 +395,7 @@ describe('ChatGPT project workflow contracts', () => {
     const listed = (await client.listTools()).tools;
     expect(listed.map((tool) => tool.name).sort()).toEqual(
       [
+        'approval_respond',
         'audit_read',
         'browser_act',
         'browser_read',

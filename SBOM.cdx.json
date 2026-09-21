@@ -5,10 +5,10 @@
   "metadata": {
     "component": {
       "type": "application",
-      "bom-ref": "pkg:npm/forgebridge@0.1.0-alpha.3",
+      "bom-ref": "pkg:npm/forgebridge@0.1.0-alpha.4",
       "name": "forgebridge",
-      "version": "0.1.0-alpha.3",
-      "purl": "pkg:npm/forgebridge@0.1.0-alpha.3"
+      "version": "0.1.0-alpha.4",
+      "purl": "pkg:npm/forgebridge@0.1.0-alpha.4"
     },
     "tools": {
       "components": [
@@ -1904,7 +1904,7 @@
   ],
   "dependencies": [
     {
-      "ref": "pkg:npm/forgebridge@0.1.0-alpha.3",
+      "ref": "pkg:npm/forgebridge@0.1.0-alpha.4",
       "dependsOn": [
         "pkg:npm/%40modelcontextprotocol/ext-apps@1.7.5",
         "pkg:npm/%40modelcontextprotocol/sdk@1.30.0",

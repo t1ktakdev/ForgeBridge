@@ -33,6 +33,39 @@ On Linux, use `forgebridge browser install --with-deps` when the host also needs
 libraries. The browser command resolves the Playwright version bundled with ForgeBridge instead of
 asking the user to install an unrelated global Playwright version.
 
+## Guided setup
+
+Use `forgebridge setup` for a guided first-run flow. It creates the protected ForgeBridge state,
+configuration, device identity, and local control credential, then prints connection instructions
+for the clients you select. It does not silently edit Cursor/Claude configuration files and never
+writes the OpenAI tunnel runtime key to ForgeBridge configuration.
+
+```powershell
+forgebridge setup
+```
+
+For scripted or managed environments, use explicit non-interactive flags:
+
+```powershell
+forgebridge setup --non-interactive --root D:\\Projects\\MyProject --local --cursor --claude --mode balanced --autonomy standard
+```
+
+Add `--chatgpt` to generate the Secure MCP Tunnel setup plan. If the tunnel already exists, pass
+`--tunnel-id tunnel_...`; otherwise the generated command contains a `<TUNNEL_ID>` placeholder. The
+runtime key remains environment-only and is used later by `forgebridge tunnel doctor` and
+`forgebridge tunnel run`.
+
+By default an existing ForgeBridge configuration is reused rather than overwritten. Use `--force`
+only when you intentionally want setup to recreate the configuration for the selected root and
+policy. The generated Windows commands are PowerShell-safe for executable and configuration paths
+that contain spaces.
+
+The client flags can be combined:
+
+```text
+--local --cursor --claude --chatgpt
+```
+
 For stdio MCP clients, a global install is optional:
 
 ```sh
@@ -70,7 +103,7 @@ The reviewed installer accepts only a local `.tgz` path and creates no service, 
 scheduled task, firewall rule, or PATH entry:
 
 ```powershell
-.\scripts\install-windows.ps1 -PackagePath .\release\forgebridge-0.1.0-alpha.3.tgz -InstallChromium
+.\scripts\install-windows.ps1 -PackagePath .\release\forgebridge-0.1.0-alpha.4.tgz -InstallChromium
 & "$env:LOCALAPPDATA\Programs\ForgeBridge\node_modules\.bin\forgebridge.cmd" init --root C:\Projects\MyProject
 ```
 
@@ -80,7 +113,7 @@ needed. The default state remains `%LOCALAPPDATA%\ForgeBridge`, outside the inst
 For a portable or developer-scoped installation on any supported platform:
 
 ```sh
-npm install --prefix /chosen/forgebridge ./release/forgebridge-0.1.0-alpha.3.tgz
+npm install --prefix /chosen/forgebridge ./release/forgebridge-0.1.0-alpha.4.tgz
 /chosen/forgebridge/node_modules/.bin/forgebridge --version
 /chosen/forgebridge/node_modules/.bin/playwright install chromium
 ```

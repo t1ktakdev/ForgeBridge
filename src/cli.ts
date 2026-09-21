@@ -4,6 +4,7 @@ import { access } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { runDeviceCommand } from './device/command.js';
 import { isMainModule } from './core/entrypoint.js';
 import { claimControlEndpoint, readControlEndpoint } from './control/endpoint.js';
 import { ForgeBridgeAgent } from './agent.js';
@@ -19,6 +20,7 @@ import { DeviceIdentityStore } from './core/identity.js';
 import { LocalTokenStore } from './core/local-token.js';
 import { ensurePrivateDirectory } from './core/file-permissions.js';
 import { LocalHttpTransportServer } from './transports/http.js';
+import { runSetupCommand } from './setup/command.js';
 import { connectStdio } from './transports/stdio.js';
 import {
   forgeBridgeStdioCommand,
@@ -64,11 +66,13 @@ function usage(): string {
   return `ForgeBridge ${FORGEBRIDGE_VERSION}
 
 Usage:
+  forgebridge setup [--root PATH] [--local] [--chatgpt] [--cursor] [--claude] [--mode ask|balanced|full] [--autonomy standard|trusted-local] [--tunnel-id ID] [--non-interactive] [--force]
   forgebridge init [--root PATH] [--state PATH] [--force]
   forgebridge doctor [--config FILE] [--state PATH]
   forgebridge browser install [--with-deps]
   forgebridge serve --transport stdio|http [--config FILE] [--state PATH]
   forgebridge status [--config FILE] [--state PATH]
+  forgebridge device list|status|rename NAME|ping|revoke [--config FILE] [--state PATH]
   forgebridge approvals [--config FILE] [--state PATH]
   forgebridge approve APPROVAL_ID [--kind once|session|temporary] [--duration-ms N] [--max-uses N]
   forgebridge deny APPROVAL_ID
@@ -145,6 +149,10 @@ export async function runCli(
   if (!command || command === 'help' || has(args, '--help')) {
     io.stdout(usage());
     return 0;
+  }
+
+  if (command === 'setup') {
+    return runSetupCommand(args, io, fileURLToPath(import.meta.url));
   }
 
   if (command === 'doctor') {
@@ -312,6 +320,7 @@ export async function runCli(
     let closeStdio: (() => Promise<void>) | undefined;
     try {
       agent = await ForgeBridgeAgent.create(config, state, [file]);
+      agent.setTransport(transport);
       const activeAgent = agent;
       http = new LocalHttpTransportServer({
         agent,
@@ -395,6 +404,10 @@ export async function runCli(
       explain: operation === 'doctor',
     });
     return runTunnelClient(executable, tunnelArgs);
+  }
+
+  if (command === 'device') {
+    return runDeviceCommand(args, io, (pathname, init) => controlRequest(args, pathname, init));
   }
 
   if (command === 'status') {

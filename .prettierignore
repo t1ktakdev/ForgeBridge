@@ -2,6 +2,7 @@ dist
 coverage
 node_modules
 .validation-tmp
+.tmp
 pnpm-lock.yaml
 SBOM.cdx.json
 release

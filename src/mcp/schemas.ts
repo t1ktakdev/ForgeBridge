@@ -688,6 +688,20 @@ export const ProjectCheckInputSchema = z
     ...approvalFields,
   })
   .strict();
+export const ApprovalRespondInputSchema = z
+  .object({
+    approvalId: z.uuid(),
+    appToken: z.string().min(32).max(256),
+    response: z.enum(['deny', 'once', 'session', 'temporary']),
+    durationMs: z
+      .number()
+      .int()
+      .min(10_000)
+      .max(60 * 60_000)
+      .optional(),
+    maxUses: z.number().int().min(1).max(10_000).optional(),
+  })
+  .strict();
 export const RenderStatusInputSchema = z.object({ ...approvalFields }).strict();
 export const AuditReadInputSchema = z
   .object({

@@ -305,6 +305,23 @@ describe('PermissionEngine', () => {
     expect(result.decision.ruleId).toBe('deny-project-delete');
   });
 
+  it('accepts MCP App approval responses only for the matching actor and session', async () => {
+    const engine = new PermissionEngine(defaultConfig(root), store, new Redactor());
+    const first = await engine.authorize(request);
+    if (first.outcome !== 'approval_required') throw new Error('Expected approval');
+
+    await expect(
+      store.respondForSession(first.approval.id, 'once', 'other-actor', request.sessionId),
+    ).rejects.toMatchObject({ code: 'approval_session_mismatch' });
+    await expect(
+      store.respondForSession(first.approval.id, 'once', request.actorId, 'other-session'),
+    ).rejects.toMatchObject({ code: 'approval_session_mismatch' });
+    await expect(
+      store.respondForSession(first.approval.id, 'once', request.actorId, request.sessionId),
+    ).resolves.toMatchObject({ status: 'approved', approvalKind: 'once' });
+    expect((await engine.authorize(request, first.approval.id)).outcome).toBe('allow');
+  });
+
   it('denies a scoped capability outside configured roots', async () => {
     const engine = new PermissionEngine(defaultConfig(root), store, new Redactor());
     const result = await engine.authorize({

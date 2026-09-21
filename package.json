@@ -1,6 +1,6 @@
 {
   "name": "forgebridge",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "description": "A local, permissioned MCP agent for authorized developer workstations.",
   "type": "module",
   "license": "Apache-2.0",

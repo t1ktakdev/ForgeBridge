@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { z } from 'zod';
 import { writeFileAtomic } from './atomic.js';
+import { ForgeBridgeError } from './errors.js';
 import { restrictPrivateFile } from './file-permissions.js';
 
 const IdentitySchema = z.object({
@@ -55,6 +56,21 @@ export class DeviceIdentityStore {
     await writeFileAtomic(this.file, `${JSON.stringify(identity, null, 2)}\n`, 0o600);
     await restrictPrivateFile(this.file);
     return identity;
+  }
+
+  async rename(deviceName: string): Promise<DeviceIdentity> {
+    const normalized = deviceName.trim();
+    if (!normalized || normalized.length > 128) {
+      throw new ForgeBridgeError(
+        'invalid_device_name',
+        'Device name must contain between 1 and 128 non-whitespace characters',
+      );
+    }
+    const identity = await this.loadOrCreate();
+    const updated = IdentitySchema.parse({ ...identity, deviceName: normalized });
+    await writeFileAtomic(this.file, `${JSON.stringify(updated, null, 2)}\n`, 0o600);
+    await restrictPrivateFile(this.file);
+    return updated;
   }
 
   sign(identity: DeviceIdentity, payload: string): string {

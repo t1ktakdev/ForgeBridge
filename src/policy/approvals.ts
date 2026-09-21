@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { ForgeBridgeError } from '../core/errors.js';
 import { z } from 'zod';
 import { writeFileAtomic } from '../core/atomic.js';
 import { CapabilitySchema, ScopeSchema, type AuthorizationRequest } from './types.js';
@@ -158,6 +159,25 @@ export class ApprovalStore {
     }
     await this.persist();
     return record;
+  }
+
+  async respondForSession(
+    id: string,
+    response: 'deny' | ApprovalKind,
+    actorId: string,
+    sessionId: string,
+    durationMs?: number,
+    maxUses?: number,
+  ): Promise<ApprovalRecord> {
+    const record = this.#records.get(id);
+    if (record?.actorId !== actorId || record.sessionId !== sessionId) {
+      throw new ForgeBridgeError(
+        'approval_session_mismatch',
+        'Approval does not belong to this MCP actor/session',
+        { approvalId: id },
+      );
+    }
+    return this.respond(id, response, durationMs, maxUses);
   }
 
   statusFor(

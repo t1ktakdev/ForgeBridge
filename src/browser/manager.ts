@@ -465,6 +465,15 @@ export class BrowserManager {
     };
   }
 
+  list() {
+    return [...this.#sessions.values()].map((session) => ({
+      id: session.id,
+      createdAt: session.createdAt,
+      headless: session.headless,
+      pages: [...session.pages.entries()].map(([id, page]) => ({ id, url: page.url() })),
+    }));
+  }
+
   async close(sessionId: string, pageId?: string): Promise<void> {
     const session = this.requireSession(sessionId);
     if (pageId) {

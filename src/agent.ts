@@ -21,6 +21,7 @@ import { WindowsUiAutomation } from './windows/uia.js';
 import { ExecutionPolicy, ResourceGovernor } from './execution/policy.js';
 import { ForegroundActionQueue } from './execution/foreground-queue.js';
 import { ensurePrivateDirectory } from './core/file-permissions.js';
+import { FORGEBRIDGE_VERSION } from './version.js';
 
 export class ForgeBridgeAgent {
   readonly config: ForgeBridgeConfig;
@@ -41,6 +42,7 @@ export class ForgeBridgeAgent {
   readonly foregroundActions: ForegroundActionQueue;
   readonly dispatcher: AuthorizedDispatcher;
   #paused = false;
+  #transport: 'stdio' | 'http' | 'unknown' = 'unknown';
 
   private constructor(options: {
     config: ForgeBridgeConfig;
@@ -202,6 +204,15 @@ export class ForgeBridgeAgent {
     this.#paused = false;
   }
 
+  setTransport(transport: 'stdio' | 'http' | 'unknown'): void {
+    this.#transport = transport;
+  }
+
+  async renameDevice(deviceName: string): Promise<void> {
+    const updated = await new DeviceIdentityStore(this.stateDirectory).rename(deviceName);
+    Object.assign(this.identity, updated);
+  }
+
   setMode(mode: PermissionMode): void {
     this.config.mode = mode;
   }
@@ -311,12 +322,28 @@ export class ForgeBridgeAgent {
   }
 
   status(): Record<string, unknown> {
+    const capabilities = [
+      ...new Set(this.config.roots.flatMap((root) => root.capabilities)),
+    ].sort();
+    const activeProject =
+      this.config.projectProfiles[0]?.root ?? this.config.roots[0]?.path ?? null;
+    const lastSeen = new Date().toISOString();
+    const health = this.#paused ? 'paused' : 'ready';
     return {
       version: 1,
       device: {
         id: this.identity.deviceId,
         name: this.identity.deviceName,
+        hostname: os.hostname(),
         fingerprint: this.identity.fingerprint,
+        createdAt: this.identity.createdAt,
+        forgeBridgeVersion: FORGEBRIDGE_VERSION,
+        capabilities,
+        health,
+        lastSeen,
+        transport: this.#transport,
+        activeProject,
+        executionProfile: this.executionPolicy.current().profile,
       },
       platform: {
         os: process.platform,
@@ -345,6 +372,7 @@ export class ForgeBridgeAgent {
       activeGrants: this.permissions.listGrants(),
       pendingApprovals: this.approvals.listPending(),
       jobs: this.jobs.list({ limit: 25 }),
+      browserSessions: this.browser.list(),
       terminalSessions: this.terminal.list(),
       windowsUiAutomation: {
         enabled: this.config.windowsUiAutomation.enabled,

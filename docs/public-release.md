@@ -1,6 +1,6 @@
 # Public alpha release
 
-Target: `0.1.0-alpha.3`.
+Target: `0.1.0-alpha.4`.
 
 This document is the operator checklist for publishing ForgeBridge without copying local state,
 credentials, browser profiles, audit logs, screenshots, or private Git history into the public

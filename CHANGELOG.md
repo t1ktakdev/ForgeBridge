@@ -6,6 +6,35 @@ All notable changes are recorded here. ForgeBridge follows Semantic Versioning a
 
 No changes yet.
 
+## [0.1.0-alpha.4] - 2026-09-21
+
+### Added
+
+- Guided `forgebridge setup` onboarding for local MCP clients and Secure MCP Tunnel planning without
+  persisting tunnel runtime credentials.
+- Local device management with persistent device naming, runtime health metadata, CLI
+  list/status/ping/rename/revoke commands, and Control Center device controls.
+- A redesigned routed Control Center with Overview, Projects, Devices, Jobs, Sessions, Approvals,
+  Audit, and Settings views, persistent RU/EN localization, theme controls, search/filtering,
+  responsive layouts, and product-quality motion.
+- Real Control Center lifecycle actions for cancelling durable jobs, stopping terminal sessions,
+  closing browser sessions, revoking grants, and handling foreground actions.
+- In-chat approval UX improvements for MCP Apps, including preserved capability metadata for secure
+  confirmation flows.
+
+### Fixed
+
+- Canonical filesystem and repository policy scopes now match the same physical paths enforced by
+  the filesystem guard.
+- Durable jobs finalize completion only after output is flushed, preventing stale running states.
+- macOS package installation repairs the executable bit on the published node-pty spawn helper.
+- Git network operations preserve reviewed credential helpers while repository-controlled hooks,
+  filters, prompts, and unsafe transports remain disabled.
+- Cross-platform release tooling now supports Registry-only recovery, stable pnpm invocation, and
+  deterministic package/SBOM validation.
+- Control Center regression coverage now validates generated browser JavaScript syntax and
+  authenticated lifecycle actions.
+
 ## [0.1.0-alpha.3] - 2026-09-20
 
 ### Added

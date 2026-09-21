@@ -115,7 +115,7 @@ Playwright browser binaries are platform-specific. Nothing is published by the r
 ```powershell
 pnpm run package:artifact
 pnpm run package:validate
-.\scripts\install-windows.ps1 -PackagePath .\release\forgebridge-0.1.0-alpha.3.tgz -InstallChromium
+.\scripts\install-windows.ps1 -PackagePath .\release\forgebridge-0.1.0-alpha.4.tgz -InstallChromium
 ```
 
 The artifact includes a CycloneDX SBOM and a SHA-256 checksum. Validation installs the actual

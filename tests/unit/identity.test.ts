@@ -14,4 +14,16 @@ describe('DeviceIdentityStore', () => {
     expect(first.fingerprint).toMatch(/^[a-f0-9]{64}$/u);
     expect(store.sign(first, 'payload')).toMatch(/^[A-Za-z0-9_-]+$/u);
   });
+
+  it('persists a renamed device without rotating its identity', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'forgebridge-identity-'));
+    const store = new DeviceIdentityStore(directory);
+    const before = await store.loadOrCreate();
+    const renamed = await store.rename('  Dev Workstation  ');
+    const after = await new DeviceIdentityStore(directory).loadOrCreate();
+    expect(renamed.deviceName).toBe('Dev Workstation');
+    expect(after.deviceName).toBe('Dev Workstation');
+    expect(after.deviceId).toBe(before.deviceId);
+    expect(after.fingerprint).toBe(before.fingerprint);
+  });
 });

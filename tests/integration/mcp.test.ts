@@ -52,6 +52,7 @@ describe('ForgeBridge MCP adapter', () => {
       'windows_act',
       'foreground',
       'system_info',
+      'approval_respond',
       'render_status',
       'permissions_status',
       'audit_read',
@@ -67,6 +68,9 @@ describe('ForgeBridge MCP adapter', () => {
       destructiveHint: false,
       openWorldHint: false,
     });
+    expect(listed.tools.find((tool) => tool.name === 'approval_respond')?._meta).toMatchObject({
+      ui: { visibility: ['app'] },
+    });
     expect(listed.tools.find((tool) => tool.name === 'render_status')?._meta).toMatchObject({
       ui: { resourceUri: 'ui://forgebridge/status-v1.html' },
       'ui/resourceUri': 'ui://forgebridge/status-v1.html',
@@ -79,9 +83,10 @@ describe('ForgeBridge MCP adapter', () => {
     const ui = await client.readResource({ uri: 'ui://forgebridge/status-v1.html' });
     expect(ui.contents[0]?.mimeType).toBe('text/html;profile=mcp-app');
     const firstResource = ui.contents[0];
-    expect(firstResource && 'text' in firstResource ? firstResource.text : '').toContain(
-      'ui/initialize',
-    );
+    const uiText = firstResource && 'text' in firstResource ? firstResource.text : '';
+    expect(uiText).toContain('ui/initialize');
+    expect(uiText).toContain('let appToken;');
+    expect(uiText).not.toMatch(/const appToken = "[^"]+";/u);
     expect(firstResource?._meta).toMatchObject({
       ui: { prefersBorder: true, csp: { connectDomains: [], resourceDomains: [] } },
       'openai/widgetPrefersBorder': true,
@@ -96,6 +101,11 @@ describe('ForgeBridge MCP adapter', () => {
     ).toBe(true);
 
     const rendered = await client.callTool({ name: 'render_status', arguments: {} });
+    const appMeta = rendered._meta?.['io.github.t1ktakdev/forgebridge'] as
+      { approvalToken?: unknown } | undefined;
+    const appToken = appMeta?.approvalToken;
+    expect(typeof appToken).toBe('string');
+    if (typeof appToken !== 'string') throw new Error('Missing app-only approval capability');
     expect(rendered.isError).not.toBe(true);
     expect(
       (rendered.structuredContent as { data: { recentAudit: unknown[] } }).data.recentAudit,
@@ -134,7 +144,23 @@ describe('ForgeBridge MCP adapter', () => {
     ).error.details.approval;
     expect(await readFile(target, 'utf8')).toBe('hello');
 
-    await agent.approvals.respond(approval.id, 'once');
+    const rejectedApproval = await client.callTool({
+      name: 'approval_respond',
+      arguments: { approvalId: approval.id, response: 'once', appToken: 'x'.repeat(32) },
+    });
+    expect(rejectedApproval.isError).toBe(true);
+    expect(rejectedApproval.structuredContent).toMatchObject({
+      error: { code: 'invalid_app_approval_token' },
+    });
+
+    const appApproved = await client.callTool({
+      name: 'approval_respond',
+      arguments: { approvalId: approval.id, response: 'once', appToken },
+    });
+    expect(appApproved.isError).not.toBe(true);
+    expect(appApproved.structuredContent).toMatchObject({
+      data: { approvalId: approval.id, status: 'approved', response: 'once' },
+    });
     const removed = await client.callTool({
       name: 'fs_write',
       arguments: { operation: 'delete', path: target, approvalIds: [approval.id] },

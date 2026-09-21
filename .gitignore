@@ -1,5 +1,6 @@
 node_modules/
 .validation-tmp/
+.tmp/
 dist/
 release/
 coverage/

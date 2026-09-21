@@ -10,7 +10,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import type { ForgeBridgeAgent } from '../agent.js';
-import { renderControlUi } from '../control/ui.js';
+import { renderControlCenterUi as renderControlUi } from '../control/center-ui.js';
 import { asForgeBridgeError, ForgeBridgeError } from '../core/errors.js';
 import type { LocalTokenStore } from '../core/local-token.js';
 import { createForgeBridgeMcpServer } from '../mcp/server.js';
@@ -19,6 +19,12 @@ const ControlActionSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('pause') }).strict(),
   z.object({ action: z.literal('resume') }).strict(),
   z.object({ action: z.literal('revoke') }).strict(),
+  z.object({ action: z.literal('cancel_job'), jobId: z.uuid() }).strict(),
+  z.object({ action: z.literal('kill_terminal'), sessionId: z.uuid() }).strict(),
+  z.object({ action: z.literal('close_browser_session'), sessionId: z.uuid() }).strict(),
+  z
+    .object({ action: z.literal('rename_device'), name: z.string().trim().min(1).max(128) })
+    .strict(),
   z
     .object({
       action: z.literal('set_execution_profile'),
@@ -318,11 +324,15 @@ export class LocalHttpTransportServer {
     const capability =
       action.action === 'revoke'
         ? ('agent.revoke' as const)
-        : action.action === 'approval' ||
-            action.action === 'revoke_grant' ||
-            action.action === 'foreground_action'
-          ? ('approvals.respond' as const)
-          : ('agent.configure' as const);
+        : action.action === 'cancel_job' || action.action === 'kill_terminal'
+          ? ('process.kill' as const)
+          : action.action === 'close_browser_session'
+            ? ('browser.navigate' as const)
+            : action.action === 'approval' ||
+                action.action === 'revoke_grant' ||
+                action.action === 'foreground_action'
+              ? ('approvals.respond' as const)
+              : ('agent.configure' as const);
     const auditBase = {
       correlationId,
       actorId: 'local-control-user',
@@ -339,6 +349,12 @@ export class LocalHttpTransportServer {
     try {
       if (action.action === 'pause') this.#agent.pause();
       else if (action.action === 'resume') this.#agent.resume();
+      else if (action.action === 'rename_device') await this.#agent.renameDevice(action.name);
+      else if (action.action === 'cancel_job') await this.#agent.jobs.cancel(action.jobId);
+      else if (action.action === 'kill_terminal')
+        await this.#agent.terminal.kill(action.sessionId, true);
+      else if (action.action === 'close_browser_session')
+        await this.#agent.browser.close(action.sessionId);
       else if (action.action === 'set_execution_profile') {
         await this.#agent.setExecutionProfile(action.profile);
         await this.#saveConfiguration?.();
