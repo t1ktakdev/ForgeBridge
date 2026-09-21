@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { pnpmInvocation } from './pnpm-invocation.mjs';
+import { npmInvocation, pnpmInvocation } from './pnpm-invocation.mjs';
 
 function fixture(platform, env, files, links = {}) {
   return {
@@ -78,4 +78,40 @@ test('Corepack Windows shims resolve their JavaScript entry point', () => {
 });
 test('missing pnpm reports a recovery instruction', () => {
   assert.throws(() => pnpmInvocation([], fixture('linux', {}, {})), /ensure pnpm is on PATH/u);
+});
+
+test('npm resolves a Windows PATH installation separate from the pnpm Node runtime', () => {
+  const script = 'C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js';
+  const options = fixture(
+    'win32',
+    { npm_execpath: 'pnpm', Path: 'C:\\setup-pnpm\\bin;C:\\Program Files\\nodejs' },
+    { 'C:\\Program Files\\nodejs\\npm.cmd': '', [script]: '' },
+  );
+  assert.deepEqual(npmInvocation(['install', 'D:\\package with spaces.tgz'], options), [
+    '/runtime/node',
+    [script, 'install', 'D:\\package with spaces.tgz'],
+  ]);
+});
+test('npm ignores a pnpm lifecycle launcher and follows its own POSIX symlink', () => {
+  const options = fixture(
+    'linux',
+    { npm_execpath: '/tools/pnpm.cjs', PATH: '/usr/bin' },
+    { '/tools/pnpm.cjs': '', '/usr/lib/npm/bin/npm-cli.js': '' },
+    { '/usr/bin/npm': '/usr/lib/npm/bin/npm-cli.js' },
+  );
+  assert.deepEqual(npmInvocation(['exec', '--offline'], options), [
+    '/runtime/node',
+    ['/usr/lib/npm/bin/npm-cli.js', 'exec', '--offline'],
+  ]);
+});
+test('npm recognizes its absolute lifecycle launcher', () => {
+  const options = fixture(
+    'darwin',
+    { npm_execpath: '/tools/npm-cli.js' },
+    { '/tools/npm-cli.js': '' },
+  );
+  assert.deepEqual(npmInvocation(['install'], options), [
+    '/runtime/node',
+    ['/tools/npm-cli.js', 'install'],
+  ]);
 });

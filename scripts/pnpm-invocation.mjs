@@ -6,6 +6,14 @@ import process from 'node:process';
 // Resolve JS launchers separately from standalone pnpm executables. In particular,
 // npm_execpath may be just "pnpm" under pnpm/setup; it is not a Node script path.
 export function pnpmInvocation(args, options = {}) {
+  return packageManagerInvocation('pnpm', args, options);
+}
+
+export function npmInvocation(args, options = {}) {
+  return packageManagerInvocation('npm', args, options);
+}
+
+function packageManagerInvocation(manager, args, options) {
   const platform = options.platform ?? process.platform;
   const env = options.env ?? process.env;
   const node = options.execPath ?? process.execPath;
@@ -29,11 +37,15 @@ export function pnpmInvocation(args, options = {}) {
     if (/\.(?:c?js|mjs)$/iu.test(resolved)) return [node, [resolved, ...args]];
     if (/\.(?:cmd|bat)$/iu.test(resolved)) {
       const directory = paths.dirname(resolved);
-      for (const relative of [
-        ['node_modules', 'pnpm', 'bin', 'pnpm.cjs'],
-        ['node_modules', 'corepack', 'dist', 'pnpm.js'],
-        ['pnpm.cjs'],
-      ]) {
+      const scripts =
+        manager === 'npm'
+          ? [['node_modules', 'npm', 'bin', 'npm-cli.js']]
+          : [
+              ['node_modules', 'pnpm', 'bin', 'pnpm.cjs'],
+              ['node_modules', 'corepack', 'dist', 'pnpm.js'],
+              ['pnpm.cjs'],
+            ];
+      for (const relative of scripts) {
         const script = paths.join(directory, ...relative);
         if (exists(script)) return [node, [script, ...args]];
       }
@@ -49,19 +61,24 @@ export function pnpmInvocation(args, options = {}) {
   if (
     lifecycle &&
     paths.isAbsolute(lifecycle) &&
-    /^pnpm(?:\.(?:c?js|mjs|exe|cmd|bat))?$/iu.test(paths.basename(lifecycle))
+    (manager === 'npm'
+      ? /^npm(?:-cli)?(?:\.(?:c?js|mjs|exe|cmd|bat))?$/iu
+      : /^pnpm(?:\.(?:c?js|mjs|exe|cmd|bat))?$/iu
+    ).test(paths.basename(lifecycle))
   ) {
     const invocation = launcher(lifecycle);
     if (invocation) return invocation;
   }
   const searchPath = Object.entries(env).find(([key]) => key.toLowerCase() === 'path')?.[1] ?? '';
   for (const directory of searchPath.split(paths.delimiter).filter(Boolean)) {
-    for (const name of platform === 'win32' ? ['pnpm.exe', 'pnpm.cmd', 'pnpm'] : ['pnpm']) {
+    for (const name of platform === 'win32'
+      ? [`${manager}.exe`, `${manager}.cmd`, manager]
+      : [manager]) {
       const invocation = launcher(paths.join(directory, name));
       if (invocation) return invocation;
     }
   }
   throw new Error(
-    'Cannot locate a pnpm executable or JavaScript launcher. Install the packageManager version from package.json and ensure pnpm is on PATH.',
+    `Cannot locate a ${manager} executable or JavaScript launcher. Install ${manager} and ensure ${manager} is on PATH.`,
   );
 }

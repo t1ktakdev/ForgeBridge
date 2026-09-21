@@ -7,6 +7,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { clearTimeout, setTimeout } from 'node:timers';
 import { fileURLToPath } from 'node:url';
+import { npmInvocation } from './pnpm-invocation.mjs';
 
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const releaseDirectory = path.join(repository, 'release');
@@ -30,18 +31,6 @@ function run(command, args, options = {}) {
     throw new Error(`${command} ${args.join(' ')} failed\n${result.stdout}\n${result.stderr}`);
   }
   return result.stdout.trim();
-}
-
-function npmInvocation(args) {
-  if (process.platform !== 'win32') return ['npm', args];
-  const npmCli = path.join(
-    path.dirname(process.execPath),
-    'node_modules',
-    'npm',
-    'bin',
-    'npm-cli.js',
-  );
-  return [process.execPath, [npmCli, ...args]];
 }
 
 async function stopChild(child) {

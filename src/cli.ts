@@ -3,7 +3,8 @@ import { spawnSync } from 'node:child_process';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+import { isMainModule } from './core/entrypoint.js';
 import { claimControlEndpoint, readControlEndpoint } from './control/endpoint.js';
 import { ForgeBridgeAgent } from './agent.js';
 import {
@@ -573,8 +574,7 @@ export async function runCli(
   return 2;
 }
 
-const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : undefined;
-if (invokedPath === import.meta.url) {
+if (isMainModule(import.meta.url)) {
   runCli().then(
     (code) => {
       process.exitCode = code;
