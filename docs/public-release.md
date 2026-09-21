@@ -69,3 +69,17 @@ Package validation checks both the CLI JavaScript entry point and the installed 
 offline `npm exec`. It uses temporary installation, state, project roots, and a separate HTTP port.
 The running development agent and its tunnel are not replaced. Native interactive desktop tests
 remain separate opt-in gates.
+
+## Recovering MCP Registry publication
+
+If npm publication succeeded but Registry publication failed, keep the existing release tag. After
+cross-platform CI passes on main, run the Publish workflow from main with `registry_only=true`:
+
+```sh
+gh workflow run publish.yml --ref main -f registry_only=true
+```
+
+This path runs the quality gate and installed-package validation, verifies the exact published npm
+version and MCP identity, then publishes Registry metadata using GitHub OIDC. It does not publish
+npm or move tags. The publisher binary is pinned and its SHA-256 checksum is verified before use. A
+normal manual dispatch with the input left false runs validation only.
